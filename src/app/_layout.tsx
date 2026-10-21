@@ -1,7 +1,34 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
+
 import { ReportesProvider } from '../lib/reports';
 
+// Mostrar notificaciones en foreground (banner)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function RootLayout() {
+  // Tap-to-open
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
+      const id = resp.notification.request.content.data?.reporteId;
+      if (id) {
+        router.push({
+          pathname: '/reporte/[id]',
+          params: { id: String(id) },
+        });
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   return (
     <ReportesProvider>
       <Stack>
@@ -14,7 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="ajustes-app" options={{ title: 'Ajustes' }} />
         <Stack.Screen
           name="permisos/[recurso]"
-          options={{ title: '', presentation: 'modal', headerShown: true }}
+          options={{ title: '', presentation: 'modal' }}
         />
       </Stack>
     </ReportesProvider>

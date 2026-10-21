@@ -1,5 +1,6 @@
 import { Camera } from 'expo-camera';
 import type { PermissionResponse } from 'expo';
+import { Platform } from 'react-native';
 import * as Audio from 'expo-audio';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
@@ -34,7 +35,12 @@ export const registro: Record<Recurso, Registro> = {
   },
   notificaciones: {
     get: () => Notifications.getPermissionsAsync(),
-    request: () => Notifications.requestPermissionsAsync(),
+    request: () =>
+      Platform.OS === 'ios'
+        ? Notifications.requestPermissionsAsync({
+            ios: { allowProvisional: true },
+          })
+        : Notifications.requestPermissionsAsync(),
   },
   microfono: {
     get: () => Audio.getRecordingPermissionsAsync(),

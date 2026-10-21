@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
@@ -164,12 +165,22 @@ export function ReportesProvider({ children }: { children: React.ReactNode }) {
       // notificación local solo si hay permiso (consultar, no pedir aquí)
       const perm = await Notifications.getPermissionsAsync();
       if (!perm.granted) return;
+
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('reportes', {
+          name: 'Reportes',
+          importance: Notifications.AndroidImportance.DEFAULT,
+        });
+      }
+
       Notifications.scheduleNotificationAsync({
         content: {
           title: 'Reporte resuelto',
           body: `Tu reporte "${rep.titulo}" fue resuelto`,
           data: { reporteId: id },
-          // color / canal Android
+          ...(Platform.OS === 'android'
+            ? { channelId: 'reportes' }
+            : {}),
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
