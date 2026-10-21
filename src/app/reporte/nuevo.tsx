@@ -12,6 +12,7 @@ export default function NuevoReporte() {
   const p = useLocalSearchParams();
   const aulaParam = Array.isArray(p.aula) ? p.aula[0] : p.aula;
   const fotoParam = Array.isArray(p.foto) ? p.foto[0] : p.foto;
+  const vozParam = Array.isArray(p.voz) ? p.voz[0] : p.voz;
   const sectorParam = Array.isArray(p.sector) ? p.sector[0] : p.sector;
 
   const [titulo, setTitulo] = useState('');
@@ -19,6 +20,7 @@ export default function NuevoReporte() {
   const [aula, setAula] = useState(aulaParam ?? '');
   const [categoria, setCategoria] = useState<Categoria>('electricidad');
   const [foto, setFoto] = useState(fotoParam);
+  const [voz, setVoz] = useState(vozParam);
   const [sector, setSector] = useState(sectorParam);
 
   // sincronizar params si cambian (al regresar de otras pantallas)
@@ -27,8 +29,9 @@ export default function NuevoReporte() {
   useEffect(() => {
     if (aulaParam && aulaParam !== aula) setAula(aulaParam);
     if (fotoParam && fotoParam !== foto) setFoto(fotoParam);
+    if (vozParam && vozParam !== voz) setVoz(vozParam);
     if (sectorParam && sectorParam !== sector) setSector(sectorParam);
-  }, [aulaParam, fotoParam, sectorParam]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [aulaParam, fotoParam, vozParam, sectorParam]); // eslint-disable-line react-hooks/exhaustive-deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!listo) return <Cargando />;
@@ -41,6 +44,7 @@ export default function NuevoReporte() {
       aula: aula.trim(),
       categoria,
       foto,
+      voz,
       sector,
     });
     router.replace({ pathname: '/reporte/[id]', params: { id: r.id } });
@@ -89,6 +93,7 @@ export default function NuevoReporte() {
         </View>
 
         {foto ? <Text style={styles.pill}>Foto adjunta ✓</Text> : null}
+        {voz ? <Text style={styles.pill}>Nota de voz adjunta ✓</Text> : null}
         {sector ? <Text style={styles.pill}>Sector: {sector}</Text> : null}
 
         <View style={styles.buttonRow}>
@@ -103,6 +108,12 @@ export default function NuevoReporte() {
             onPress={() => router.push('/reporte/foto')}
           >
             <Text style={styles.btnText}>Adjuntar foto</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btn}
+            onPress={() => router.push('/reporte/voz')}
+          >
+            <Text style={styles.btnText}>Nota de voz</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.btn}

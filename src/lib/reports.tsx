@@ -23,6 +23,7 @@ export interface Reporte {
   categoria: Categoria;
   estado: EstadoReporte;
   foto?: string;
+  voz?: string;
   ubicacion?: { lat: number; lng: number; aproximada: boolean };
   sector?: string;
   createdAt: number;

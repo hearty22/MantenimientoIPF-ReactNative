@@ -1,6 +1,7 @@
-import { useLocalSearchParams, router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
 import { EstadoReporteBadge } from '../../components/EstadoReporteBadge';
@@ -31,20 +32,35 @@ export default function DetalleReporte() {
       <EstadoReporteBadge estado={r.estado} />
       {r.descripcion ? <Text style={styles.desc}>{r.descripcion}</Text> : null}
       {r.foto ? <Image source={{ uri: r.foto }} style={styles.foto} /> : null}
+      {r.voz ? <ReproductorVoz uri={r.voz} /> : null}
       {r.ubicacion ? (
         <Text style={styles.meta}>
           Ubicación: {r.ubicacion.aproximada ? 'Ubicación aproximada' : `${r.ubicacion.lat}, ${r.ubicacion.lng}`}
         </Text>
       ) : null}
       {r.sector ? <Text style={styles.meta}>Sector: {r.sector}</Text> : null}
-      <Text style={styles.meta}>
-        {new Date(r.createdAt).toLocaleString()}
-      </Text>
+      <Text style={styles.meta}>{new Date(r.createdAt).toLocaleString()}</Text>
       {r.estado !== 'resuelto' ? (
         <TouchableOpacity style={styles.btn} onPress={() => simularResolucion(r.id)}>
           <Text style={styles.btnText}>Simular resolución</Text>
         </TouchableOpacity>
       ) : null}
+    </View>
+  );
+}
+
+function ReproductorVoz({ uri }: { uri: string }) {
+  const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
+  return (
+    <View style={styles.vozBox}>
+      <Text style={styles.meta}>Nota de voz adjunta</Text>
+      <Pressable
+        style={styles.btnGhost}
+        onPress={() => (status.playing ? player.pause() : player.play())}
+      >
+        <Text style={styles.btnGhostText}>{status.playing ? 'Pausar' : 'Reproducir'}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -55,7 +71,10 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, opacity: 0.6 },
   desc: { fontSize: 14, marginTop: 4 },
   foto: { width: '100%', height: 200, borderRadius: 8, marginTop: 8 },
+  vozBox: { padding: 10, backgroundColor: '#f5f5f5', borderRadius: 8, gap: 6 },
   btn: { marginTop: 12, padding: 12, backgroundColor: '#208AEF', borderRadius: 8, alignItems: 'center' },
   btnText: { color: 'white', fontWeight: '600' },
+  btnGhost: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#208AEF', borderRadius: 6, alignSelf: 'flex-start' },
+  btnGhostText: { color: '#208AEF' },
   link: { color: '#208AEF', marginTop: 8 },
 });
