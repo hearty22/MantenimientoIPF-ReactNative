@@ -11,15 +11,32 @@ import { usePermiso } from '../../hooks/usePermiso';
 
 
 async function persistirUri(uri: string): Promise<string> {
+  const rawExt = uri.split('.').pop()?.split('?')[0] ?? 'jpg';
+  const ext = rawExt.length > 0 && rawExt.length <= 5 ? rawExt.toLowerCase() : 'jpg';
+  const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+  // 1) Intento con archivo persistente.
   try {
-    const rawExt = uri.split('.').pop()?.split('?')[0] ?? 'jpg';
-    const ext = rawExt.length > 0 && rawExt.length <= 5 ? rawExt : 'jpg';
     const destino = `${FileSystem.documentDirectory}foto-${Date.now()}.${ext}`;
     await FileSystem.copyAsync({ from: uri, to: destino });
-    return destino;
-  } catch {
-    return uri;
+    const info = await FileSystem.getInfoAsync(destino);
+    if (info.exists) return destino;
+  } catch (e) {
+    console.log('persistirUri copy failed:', e);
   }
+
+  // 2) Fallback: embeber la foto como data URI (evita depender de archivos).
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return `data:${mime};base64,${base64}`;
+  } catch (e) {
+    console.log('persistirUri base64 failed:', e);
+  }
+
+  // 3) Ultimo recurso: URI original.
+  return uri;
 }
 
 export default function Foto() {
@@ -47,7 +64,7 @@ export default function Foto() {
         <TouchableOpacity
           style={styles.btnGhost}
           onPress={async () => {
-            const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
+            const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never, quality: 0.5 });
             if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
           }}
         >
@@ -69,7 +86,7 @@ export default function Foto() {
         <TouchableOpacity
           style={styles.btnGhost}
           onPress={async () => {
-            const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
+            const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never, quality: 0.5 });
             if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
           }}
         >
@@ -101,7 +118,7 @@ export default function Foto() {
       <TouchableOpacity
         style={styles.btnGhost}
         onPress={async () => {
-          const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
+          const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never, quality: 0.5 });
           if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
         }}
       >
