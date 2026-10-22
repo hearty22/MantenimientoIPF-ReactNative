@@ -1,56 +1,161 @@
-# Welcome to your Expo app 👋
+# Mantenimiento IPF
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil para reportar desperfectos del edificio (luz quemada, canilla que pierde, proyector roto) y recibir un aviso cuando se resuelven. TP3 — permisos móviles en Expo SDK 57 (React Native 0.86), TypeScript, Expo Router. Proyecto Expo universal (Android/iOS/Web). Gestión de paquetes con `pnpm`.
 
-## Get started
+## Árbol de carpetas de `src/app`
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/app/
+  _layout.tsx              Stack raíz + ReportesProvider + handler de notificaciones
+  (tabs)/
+    _layout.tsx            Tabs: Reportes, Avisos, Permisos
+    index.tsx              /                lista de reportes + "Nuevo reporte"
+    avisos.tsx             /avisos            bandeja de avisos (alternativa a notificaciones)
+    permisos.tsx           /permisos          panel de estado de permisos
+  reporte/
+    nuevo.tsx              /reporte/nuevo     formulario (params: aula/foto/voz/sector/lat/lng)
+    escanear.tsx           /reporte/escanear  cámara para leer QR (4 estados)
+    foto.tsx               /reporte/foto      sacar foto o elegir con selector (sin permiso)
+    ubicacion.tsx          /reporte/ubicacion ubicación o sector a mano
+    voz.tsx                /reporte/voz       nota de voz (expo-audio)
+    [id].tsx               /reporte/[id]      detalle + "Simular resolución"
+  permisos/
+    [recurso].tsx          modal pantalla previa: beneficio + "Continuar" / "Abrir Ajustes"
+  ajustes-app.tsx          /ajustes-app      interruptor notificaciones (canal antes de pedir)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+<|constrain|> URL | Permiso / detalle |
+| - | - |
+| `/` | Ninguno. Tab "Reportes". |
+| `/reporte/nuevo` | Ninguno al abrir: cada permiso se pide al tocar su función. |
+| `/reporte/escanear` | Cámara (`useCameraPermissions`), con los 4 estados. |
+| `/reporte/foto` | Cámara para sacar; selector del sistema (sin permiso) para elegir. |
+| `/reporte/ubicacion` | Ubicación en primer plano. Si se deniega: elegir sector a mano. |
+| `/reporte/[id]` | Validar id; mensaje si no existe. |
+| `/avisos` | Alternativa a las notificaciones. Tab "Avisos". |
+| `/permisos` | Tab "Permisos". Se actualiza al volver de Ajustes. |
+| `/permisos/[recurso]` | Pantalla previa. `presentation: "modal"`. |
+| `/ajustes-app` | Notificaciones, pedidas al activar el interruptor. |
 
-### Other setup steps
+## `app.json` — bloque plugins (comentado)
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```jsonc
+"plugins": [
+  "expo-router",                       // routing file-based en src/app/
+  ["expo-splash-screen", {             // splash
+    "backgroundColor": "#208AEF",
+    "image": "./assets/images/splash-icon.png",
+    "imageWidth": 76
+  }],
+  ["expo-camera", {
+    // Texto en molde "Usamos tu [dato] para [beneficio concreto]"
+    "cameraPermission": "Usamos la cámara para leer el QR del aula.",
+    // Mínimo privilegio: sin sonido (escanear QR y sacar foto no graban)
+    "microphonePermission": false,
+    "recordAudioAndroid": false
+  }],
+  ["expo-location", {
+    // Solo primer plano (G2.4: sin background, sin "Siempre")
+    "locationWhenInUsePermission": "Usamos tu ubicación para marcar dónde está el problema que reportás.",
+    // Claves de ubicación siempre / motion activity omitidas (false) — mínimo privilegio
+    "locationAlwaysPermission": false,
+    "locationAlwaysAndWhenInUsePermission": false,
+    "motionUsagePermission": false
+  }],
+  ["expo-image-picker", {
+    // Sin permiso de galería: usamos el selector del sistema (launchImageLibraryAsync)
+    "photosPermission": false
+  }],
+  // expo-audio: plugin autofijado por `expo install`. Texto para nota de voz (G4).
+  ["expo-audio", {
+    "microphonePermission": "Usamos el micrófono para grabar la descripción de voz del desperfecto."
+  }],
+  ["expo-notifications", {
+    "color": "#208AEF"
+    // Canal "reportes" se crea por código en /ajustes-app (android)
+  }]
+],
+"android": {
+  "blockedPermissions": [
+    // Permisos que la app no usa: bloqueo defensivo (tools:node=remove)
+    "android.permission.SYSTEM_ALERT_WINDOW",
+    "android.permission.READ_EXTERNAL_STORAGE",   // maxSdkVersion 32, aportado por image-picker
+    "android.permission.WRITE_EXTERNAL_STORAGE"   // maxSdkVersion 32, aportado por image-picker
+  ]
+}
+```
 
-## Learn more
+## Tabla de permisos
 
-To learn more about developing your project with Expo, look at the following resources:
+| Recurso | Módulo | Cuándo se pide | Alternativa si se deniega |
+| - | - | - | - |
+| Cámara | `expo-camera` | Al tocar "Escanear QR" o "Sacar foto" | Escribir el aula a mano; selector del sistema |
+| Ubicación (primer plano) | `expo-location` | Al tocar "Usar mi ubicación actual" | Elegir sector a mano (patio, estacionamiento, pasillo) |
+| Notificaciones | `expo-notifications` | Al activar el interruptor de `/ajustes-app` | Bandeja `/avisos` dentro de la app |
+| Micrófono | `expo-audio` | Al tocar "Grabar descripción" en `/reporte/voz` | Escribir la descripción a mano |
+| Galería | Ninguno | No se pide: se usa el selector del sistema | — |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Prohibido usar `expo-permissions`. El permiso `POST_NOTIFICATIONS` (Android 13+) y `RECEIVE_BOOT_COMPLETED` vienen del manifest de la librería `expo-notifications` (merge en build), no del `app.json`.
 
-## Join the community
+## Auditoría del manifiesto (G4.1)
 
-Join our community of developers creating universal apps.
+`pnpm expo prebuild --clean` genera `android/` e `ios/` (gitignorados). Resultado verificado:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### `AndroidManifest.xml` (permisos app-level)
+
+| Permiso | Origen | Usado | Nota |
+| - | - | - | - |
+| `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` | `expo-location` | Sí | matiz `accuracy` en panel |
+| `CAMERA` | `expo-camera` | Sí | `recordAudioAndroid:false` verificado: no agrega `RECORD_AUDIO` por la cámara |
+| `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)` | `expo-audio` | Sí | nota de voz |
+| `INTERNET` | normal | Sí | - |
+| `MODIFY_AUDIO_SETTINGS` | `expo-audio` | Sí | nota de voz |
+| `READ_EXTERNAL_STORAGE` (`maxSdkVersion="32"`) | `expo-image-picker` | No | bloqueado (`tools:node="remove"`) |
+| `RECORD_AUDIO` | `expo-audio` | Sí | nota de voz |
+| `SYSTEM_ALERT_WINDOW` | (default) | No | bloqueado |
+| `VIBRATE` | librería `expo-notifications` | Sí | merge en build |
+| `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="32"`) | `expo-image-picker` | No | bloqueado |
+| `POST_NOTIFICATIONS` | librería `expo-notifications` (merge) | Sí | no aparece en el `AndroidManifest.xml` de la app |
+
+### `Info.plist` (claves de propósito)
+
+| Clave | Texto | Origen |
+| - | - | - |
+| `NSCameraUsageDescription` | "Usamos la cámara para leer el QR del aula." | plugin `expo-camera` |
+| `NSLocationWhenInUseUsageDescription` | "Usamos tu ubicación para marcar dónde está el problema que reportás." | plugin `expo-location` |
+| `NSMicrophoneUsageDescription` | "Usamos el micrófono para grabar la descripción de voz del desperfecto." | plugin `expo-audio` |
+| `NSLocationAlways*` / `NSMotionUsageDescription` | omitidas | mínimo privilegio (solo primer plano) |
+
+## Capturas (pendientes del autor)
+
+Agregar capturas o un video corto en esta carpeta/sección:
+- Escáner en sus 4 estados (cargando, cámara, "Continuar", bloqueado "Abrir Ajustes").
+- Ubicación concedida y denegada.
+- Foto tomada con el selector del sistema.
+- Notificación recibida.
+- Panel de permisos antes y después de volver de Ajustes.
+- (G5.4) Captura del diálogo del sistema en una development build, donde se vea el texto de propósito.
+
+## Verificación
+
+```bash
+pnpm lint                # expo lint
+pnpm exec tsc --noEmit   # typecheck
+pnpm expo prebuild --clean  # regenerar nativos solo para auditar; borrar ios/ android/ después
+```
+
+Smoke manual en Expo Go:
+1. Crear reporte sin permisos (aula a mano, sector a mano).
+2. Escáner pide cámara en contexto y muestra 4 estados.
+3. Bloquear cámara desde Ajustes → vuelve, panel refleja "bloqueado", pantalla muestra "Abrir Ajustes" con el camino exacto.
+4. Activar interruptor de notificaciones → diálogo aparece (Android 13+ con canal).
+5. "Simular resolución" → notificación a los 10 s en foreground + aviso en `/avisos`.
+6. Tapping sobre la notificación abre el detalle.
+
+Desarrollo y capturas requieren una development build (`pnpm expo run:android` o EAS): los textos de propósito y `blockedPermissions` no se aplican en Expo Go.
+
+## Convención de código
+
+- Rutas Expo Router en `src/app/`; componentes en `src/components/`, hooks en `src/hooks/`, lógica de permisos en `src/lib/`.
+- Hook unificado `usePermiso(recurso)` en `src/hooks/usePermiso.ts`: estados `'cargando' | 'concedido' | 'preguntable' | 'bloqueado'`, indicador parcial, `pedir()` y `abrirAjustes()`, refresco con `AppState`.
+- Permisos declarados al compilar vía `app.json`/plugins; los nativos se regeneran. Nunca editar `AndroidManifest.xml` ni `Info.plist` a mano. No se usa `expo-permissions` (desactualizado).
