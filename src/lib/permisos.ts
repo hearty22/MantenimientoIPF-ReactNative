@@ -1,6 +1,7 @@
 import { Camera } from 'expo-camera';
 import type { PermissionResponse } from 'expo';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import * as Audio from 'expo-audio';
 import * as Location from 'expo-location';
 
@@ -34,12 +35,18 @@ export const registro: Record<Recurso, Registro> = {
   },
   notificaciones: {
     get: async () => {
+      if (Constants.appOwnership === 'expo') {
+        return { granted: false, canAskAgain: false } as PermissionResponse;
+      }
       let N: any;
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       try { N = require('expo-notifications'); } catch { return { granted: false, canAskAgain: false } as PermissionResponse; }
       return N.getPermissionsAsync();
     },
     request: async () => {
+      if (Constants.appOwnership === 'expo') {
+        return { granted: false, canAskAgain: false } as PermissionResponse;
+      }
       let N: any;
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       try { N = require('expo-notifications'); } catch { return { granted: false, canAskAgain: false } as PermissionResponse; }
@@ -86,12 +93,14 @@ export function parcialDe(
       r as unknown as { ios?: { status?: number } }
     ).ios?.status;
     let provisional: number | null = null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      provisional = (require('expo-notifications') as any).IosAuthorizationStatus
-        .PROVISIONAL;
-    } catch {
-      provisional = null;
+    if (Constants.appOwnership !== 'expo') {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        provisional = (require('expo-notifications') as any).IosAuthorizationStatus
+          .PROVISIONAL;
+      } catch {
+        provisional = null;
+      }
     }
     if (provisional !== null && iosStatus === provisional) {
       return { tipo: 'notificacion-provisional' };

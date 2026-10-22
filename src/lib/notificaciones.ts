@@ -1,10 +1,15 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 type Notifs = typeof import('expo-notifications');
 
 let cached: Notifs | null | undefined;
 
 export function getNotificaciones(): Notifs | null {
+  // Expo Go (SDK 57) no expone ExpoTopicSubscriptionModule: evitar cualquier
+  // require que dispare el redbox nativo y marcar notificaciones como no
+  // disponibles. Solo development builds / standalone las soportan.
+  if (Constants.appOwnership === 'expo') return null;
   if (cached !== undefined) return cached;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
