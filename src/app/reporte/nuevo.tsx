@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
-import { useReportes, type Categoria } from '../../lib/reports';
+import { useReportes, type Categoria, type Reporte } from '../../lib/reports';
 
 const CATS: Categoria[] = ['electricidad', 'agua', 'mobiliario', 'equipos'];
 
@@ -14,6 +14,9 @@ export default function NuevoReporte() {
   const fotoParam = Array.isArray(p.foto) ? p.foto[0] : p.foto;
   const vozParam = Array.isArray(p.voz) ? p.voz[0] : p.voz;
   const sectorParam = Array.isArray(p.sector) ? p.sector[0] : p.sector;
+  const latParam = Array.isArray(p.lat) ? p.lat[0] : p.lat;
+  const lngParam = Array.isArray(p.lng) ? p.lng[0] : p.lng;
+  const aproxParam = Array.isArray(p.aproximada) ? p.aproximada[0] : p.aproximada;
 
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -22,6 +25,11 @@ export default function NuevoReporte() {
   const [foto, setFoto] = useState(fotoParam);
   const [voz, setVoz] = useState(vozParam);
   const [sector, setSector] = useState(sectorParam);
+  const [ubicacion, setUbicacion] = useState<Reporte['ubicacion'] | undefined>(
+    latParam && lngParam
+      ? { lat: Number(latParam), lng: Number(lngParam), aproximada: aproxParam === '1' }
+      : undefined,
+  );
 
   // sincronizar params si cambian (al regresar de otras pantallas)
   // useEffect con deps de params es suficiente; eslint-disable-next-line por setState condicional
@@ -31,7 +39,13 @@ export default function NuevoReporte() {
     if (fotoParam && fotoParam !== foto) setFoto(fotoParam);
     if (vozParam && vozParam !== voz) setVoz(vozParam);
     if (sectorParam && sectorParam !== sector) setSector(sectorParam);
-  }, [aulaParam, fotoParam, vozParam, sectorParam]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (latParam && lngParam) {
+      const nueva = { lat: Number(latParam), lng: Number(lngParam), aproximada: aproxParam === '1' };
+      if (!ubicacion || ubicacion.lat !== nueva.lat || ubicacion.lng !== nueva.lng || ubicacion.aproximada !== nueva.aproximada) {
+        setUbicacion(nueva);
+      }
+    }
+  }, [aulaParam, fotoParam, vozParam, sectorParam, latParam, lngParam, aproxParam]); // eslint-disable-line react-hooks/exhaustive-deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!listo) return <Cargando />;
@@ -46,6 +60,7 @@ export default function NuevoReporte() {
       foto,
       voz,
       sector,
+      ubicacion,
     });
     router.replace({ pathname: '/reporte/[id]', params: { id: r.id } });
   };

@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
@@ -51,18 +52,37 @@ export default function DetalleReporte() {
 function ReproductorVoz({ uri }: { uri: string }) {
   const player = useAudioPlayer(uri);
   const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true }).catch((e) => console.log('audio mode error:', e));
+  }, []);
+
+  const reproducir = async () => {
+    try {
+      console.log('audio uri:', uri);
+      console.log('audio status:', status.isLoaded, status.playing);
+      await player.play();
+    } catch (e) {
+      console.log('audio play error:', e);
+    }
+  };
+
   return (
     <View style={styles.vozBox}>
       <Text style={styles.meta}>Nota de voz adjunta</Text>
-      <Pressable
-        style={styles.btnGhost}
-        onPress={() => (status.playing ? player.pause() : player.play())}
-      >
-        <Text style={styles.btnGhostText}>{status.playing ? 'Pausar' : 'Reproducir'}</Text>
-      </Pressable>
+      <Text style={styles.meta}>loaded: {String(status.isLoaded)} playing: {String(status.playing)}</Text>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Pressable style={styles.btnGhost} onPress={reproducir}>
+          <Text style={styles.btnGhostText}>Reproducir</Text>
+        </Pressable>
+        <Pressable style={styles.btnGhost} onPress={() => player.pause()}>
+          <Text style={styles.btnGhostText}>Pausar</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 10 },
