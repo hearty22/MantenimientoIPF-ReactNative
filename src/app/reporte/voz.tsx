@@ -4,6 +4,7 @@ import {
 } from 'expo-audio';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
@@ -39,7 +40,20 @@ export default function Voz() {
       setBusy(false);
     }
     const u = recorder.uri;
-    if (u) setUri(u);
+    if (u) {
+      // Persistimos como data URI para evitar que Expo Go borre el archivo temporal.
+      try {
+        const ext = (u.split('.').pop()?.split('?')[0] ?? 'm4a').toLowerCase();
+        const mime = ext === 'wav' ? 'audio/wav' : ext === 'mp3' ? 'audio/mpeg' : 'audio/mp4';
+        const base64 = await FileSystem.readAsStringAsync(u, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        setUri(`data:${mime};base64,${base64}`);
+      } catch (e) {
+        console.log('audio persist failed:', e);
+        setUri(u);
+      }
+    }
     setGrabando(false);
   };
 
