@@ -15,17 +15,7 @@ async function persistirUri(uri: string): Promise<string> {
   const ext = rawExt.length > 0 && rawExt.length <= 5 ? rawExt.toLowerCase() : 'jpg';
   const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
-  // 1) Intento con archivo persistente.
-  try {
-    const destino = `${FileSystem.documentDirectory}foto-${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: uri, to: destino });
-    const info = await FileSystem.getInfoAsync(destino);
-    if (info.exists) return destino;
-  } catch (e) {
-    console.log('persistirUri copy failed:', e);
-  }
-
-  // 2) Fallback: embeber la foto como data URI (evita depender de archivos).
+  // Guardar como data URI: evita que Expo Go limpie la foto antes de verla.
   try {
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
@@ -33,10 +23,8 @@ async function persistirUri(uri: string): Promise<string> {
     return `data:${mime};base64,${base64}`;
   } catch (e) {
     console.log('persistirUri base64 failed:', e);
+    return uri;
   }
-
-  // 3) Ultimo recurso: URI original.
-  return uri;
 }
 
 export default function Foto() {
