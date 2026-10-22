@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useState } from 'react';
@@ -6,6 +7,20 @@ import { useState } from 'react';
 import { Cargando } from '../../components/Cargando';
 import { Explicacion } from '../../components/Explicacion';
 import { usePermiso } from '../../hooks/usePermiso';
+
+
+
+async function persistirUri(uri: string): Promise<string> {
+  try {
+    const rawExt = uri.split('.').pop()?.split('?')[0] ?? 'jpg';
+    const ext = rawExt.length > 0 && rawExt.length <= 5 ? rawExt : 'jpg';
+    const destino = `${FileSystem.documentDirectory}foto-${Date.now()}.${ext}`;
+    await FileSystem.copyAsync({ from: uri, to: destino });
+    return destino;
+  } catch {
+    return uri;
+  }
+}
 
 export default function Foto() {
   const { estado, pedir, abrirAjustes } = usePermiso('camara');
@@ -33,7 +48,7 @@ export default function Foto() {
           style={styles.btnGhost}
           onPress={async () => {
             const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
-            if (!r.canceled && r.assets[0]) setPreview(r.assets[0].uri);
+            if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
           }}
         >
           <Text style={styles.btnGhostText}>Elegir de la galería (sin permiso)</Text>
@@ -55,7 +70,7 @@ export default function Foto() {
           style={styles.btnGhost}
           onPress={async () => {
             const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
-            if (!r.canceled && r.assets[0]) setPreview(r.assets[0].uri);
+            if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
           }}
         >
           <Text style={styles.btnGhostText}>Elegir de la galería (sin permiso)</Text>
@@ -78,7 +93,7 @@ export default function Foto() {
           setBusy(true);
           const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as never, quality: 0.5 });
           setBusy(false);
-          if (!r.canceled && r.assets[0]) setPreview(r.assets[0].uri);
+          if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
         }}
       >
         <Text style={styles.btnText}>Sacar foto</Text>
@@ -87,7 +102,7 @@ export default function Foto() {
         style={styles.btnGhost}
         onPress={async () => {
           const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as never });
-          if (!r.canceled && r.assets[0]) setPreview(r.assets[0].uri);
+          if (!r.canceled && r.assets[0]) setPreview(await persistirUri(r.assets[0].uri));
         }}
       >
         <Text style={styles.btnGhostText}>Elegir de la galería (sin permiso)</Text>
