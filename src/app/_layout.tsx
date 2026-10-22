@@ -1,32 +1,24 @@
 import { Stack, router } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 
 import { ReportesProvider } from '../lib/reports';
-
-// Mostrar notificaciones en foreground (banner)
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+import {
+  setNotificationHandler,
+  suscribirTapToOpen,
+} from '../lib/notificaciones';
 
 export default function RootLayout() {
-  // Tap-to-open
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
-      const id = resp.notification.request.content.data?.reporteId;
-      if (id) {
-        router.push({
-          pathname: '/reporte/[id]',
-          params: { id: String(id) },
-        });
-      }
+    setNotificationHandler();
+    const unsubscribe = suscribirTapToOpen((id) => {
+      router.push({
+        pathname: '/reporte/[id]',
+        params: { id },
+      });
     });
-    return () => sub.remove();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   return (

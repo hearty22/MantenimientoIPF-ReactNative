@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 import { usePermiso } from '../hooks/usePermiso';
+import { crearCanalAndroid } from '../lib/notificaciones';
 
 export default function AjustesApp() {
   const { estado, pedir, abrirAjustes } = usePermiso('notificaciones');
@@ -17,12 +17,7 @@ export default function AjustesApp() {
     }
     setBusy(true);
     try {
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('reportes', {
-          name: 'Reportes',
-          importance: Notifications.AndroidImportance.DEFAULT,
-        });
-      }
+      await crearCanalAndroid();
       const res = await pedir();
       setAvisar(!!res?.granted);
     } finally {

@@ -3,7 +3,6 @@ import type { PermissionResponse } from 'expo';
 import { Platform } from 'react-native';
 import * as Audio from 'expo-audio';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 
 export type Recurso = 'camara' | 'ubicacion' | 'notificaciones' | 'microfono';
 
@@ -34,13 +33,20 @@ export const registro: Record<Recurso, Registro> = {
     request: () => Location.requestForegroundPermissionsAsync(),
   },
   notificaciones: {
-    get: () => Notifications.getPermissionsAsync(),
-    request: () =>
-      Platform.OS === 'ios'
-        ? Notifications.requestPermissionsAsync({
-            ios: { allowProvisional: true },
-          })
-        : Notifications.requestPermissionsAsync(),
+    get: async () => {
+      let N: any;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      try { N = require('expo-notifications'); } catch { return { granted: false, canAskAgain: false } as PermissionResponse; }
+      return N.getPermissionsAsync();
+    },
+    request: async () => {
+      let N: any;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      try { N = require('expo-notifications'); } catch { return { granted: false, canAskAgain: false } as PermissionResponse; }
+      return Platform.OS === 'ios'
+        ? N.requestPermissionsAsync({ ios: { allowProvisional: true } })
+        : N.requestPermissionsAsync();
+    },
   },
   microfono: {
     get: () => Audio.getRecordingPermissionsAsync(),
@@ -79,9 +85,15 @@ export function parcialDe(
     const iosStatus = (
       r as unknown as { ios?: { status?: number } }
     ).ios?.status;
-    if (
-      iosStatus === Notifications.IosAuthorizationStatus.PROVISIONAL
-    ) {
+    let provisional: number | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      provisional = (require('expo-notifications') as any).IosAuthorizationStatus
+        .PROVISIONAL;
+    } catch {
+      provisional = null;
+    }
+    if (provisional !== null && iosStatus === provisional) {
       return { tipo: 'notificacion-provisional' };
     }
   }
