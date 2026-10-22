@@ -1,6 +1,5 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
 import { EstadoReporteBadge } from '../../components/EstadoReporteBadge';
@@ -40,7 +39,7 @@ export default function TabReportes() {
               <EstadoReporteBadge estado={r.estado} />
             </View>
             {r.foto ? (
-              <Image source={{ uri: r.foto }} style={styles.foto} />
+              <Image source={{ uri: r.foto }} style={styles.foto} resizeMode="cover" />
             ) : null}
           </TouchableOpacity>
         ))

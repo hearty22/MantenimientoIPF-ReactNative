@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Cargando } from '../../components/Cargando';
 import { EstadoReporteBadge } from '../../components/EstadoReporteBadge';
@@ -31,7 +30,7 @@ export default function DetalleReporte() {
       <Text style={styles.meta}>{r.aula} · {r.categoria}</Text>
       <EstadoReporteBadge estado={r.estado} />
       {r.descripcion ? <Text style={styles.desc}>{r.descripcion}</Text> : null}
-      {r.foto ? <Image source={{ uri: r.foto }} style={styles.foto} /> : null}
+      {r.foto ? <Image source={{ uri: r.foto }} style={styles.foto} resizeMode="cover" onError={(e) => console.log('foto detalle error:', e.nativeEvent.error)} /> : null}
       {r.voz ? <ReproductorVoz uri={r.voz} /> : null}
       {r.ubicacion ? (
         <Text style={styles.meta}>
