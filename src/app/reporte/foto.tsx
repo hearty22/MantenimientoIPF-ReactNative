@@ -21,8 +21,7 @@ async function persistirUri(uri: string): Promise<string> {
       encoding: FileSystem.EncodingType.Base64,
     });
     return `data:${mime};base64,${base64}`;
-  } catch (e) {
-    console.log('persistirUri base64 failed:', e);
+  } catch {
     return uri;
   }
 }

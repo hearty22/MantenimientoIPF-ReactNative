@@ -49,8 +49,7 @@ export default function Voz() {
           encoding: FileSystem.EncodingType.Base64,
         });
         setUri(`data:${mime};base64,${base64}`);
-      } catch (e) {
-        console.log('audio persist failed:', e);
+      } catch {
         setUri(u);
       }
     }

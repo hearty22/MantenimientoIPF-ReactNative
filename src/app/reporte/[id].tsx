@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -31,7 +31,7 @@ export default function DetalleReporte() {
       <Text style={styles.meta}>{r.aula} · {r.categoria}</Text>
       <EstadoReporteBadge estado={r.estado} />
       {r.descripcion ? <Text style={styles.desc}>{r.descripcion}</Text> : null}
-      {r.foto ? <Image source={{ uri: r.foto }} style={styles.foto} resizeMode="cover" onError={(e) => console.log('foto detalle error:', e.nativeEvent.error)} /> : null}
+      {r.foto ? <Image source={{ uri: r.foto }} style={styles.foto} resizeMode="cover" /> : null}
       {r.voz ? <ReproductorVoz uri={r.voz} /> : null}
       {r.ubicacion ? (
         <Text style={styles.meta}>
@@ -51,26 +51,22 @@ export default function DetalleReporte() {
 
 function ReproductorVoz({ uri }: { uri: string }) {
   const player = useAudioPlayer(uri);
-  const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true }).catch((e) => console.log('audio mode error:', e));
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   }, []);
 
   const reproducir = async () => {
     try {
-      console.log('audio uri:', uri);
-      console.log('audio status:', status.isLoaded, status.playing);
       await player.play();
-    } catch (e) {
-      console.log('audio play error:', e);
+    } catch {
+      // ignore
     }
   };
 
   return (
     <View style={styles.vozBox}>
       <Text style={styles.meta}>Nota de voz adjunta</Text>
-      <Text style={styles.meta}>loaded: {String(status.isLoaded)} playing: {String(status.playing)}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pressable style={styles.btnGhost} onPress={reproducir}>
           <Text style={styles.btnGhostText}>Reproducir</Text>
